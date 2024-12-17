@@ -56,7 +56,7 @@ func getMembershipByID(c *gin.Context) {
 		//panic(err)
 	}
 
-	if val != nil {
+	if val != "" {
 		//Возвращаем ответ
 		c.IndentedJSON(http.StatusOK, val)
 		return
