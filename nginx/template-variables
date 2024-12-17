@@ -1,0 +1,3 @@
+map $host $sap_servername {
+  default "$SAP_SERVERNAME";
+}

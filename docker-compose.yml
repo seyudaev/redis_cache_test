@@ -1,0 +1,31 @@
+version: '3'
+services:
+  app:
+    build: ./app
+    image: redis_cache/app
+    container_name: app
+    expose:
+      - 8089
+    links:
+      - redis
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SAP_SERVERNAME=${SAP_SERVERNAME}
+  nginx:
+    build: ./nginx
+    image: redis_cache/nginx
+    container_name: nginx
+    volumes:
+      - ./nginx/template-variables:/etc/nginx/templates/10-variables.conf.template:ro
+    ports:
+      - 80:80
+    links:
+      - app
+  redis:
+    build: ./redis
+    image: redis_cache/redis
+    container_name: redis
+    expose:
+      - 6379
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
