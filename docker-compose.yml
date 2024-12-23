@@ -1,15 +1,18 @@
+version: '3.8'
+
 services:
   app:
     build: ./app
     image: redis_cache/app
     container_name: app
-    expose:
+    ports:
       - 8089
     links:
       - redis
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - SAP_SERVERNAME=${SAP_SERVERNAME}
+
   nginx:
     build: ./nginx
     image: redis_cache/nginx
@@ -23,6 +26,7 @@ services:
       - 80:80
     links:
       - app
+
   redis:
     build: ./redis
     image: redis_cache/redis
