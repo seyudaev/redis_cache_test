@@ -126,5 +126,5 @@ func main() {
 	router.POST("/memberships/del/:id", invalidMembershipByID) //?
 	router.POST("/memberships/:id", setMembershipByID)
 
-	router.Run("localhost:8080")
+	router.Run("0.0.0.0:8089")
 }
