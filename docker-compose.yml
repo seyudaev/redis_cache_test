@@ -18,7 +18,7 @@ services:
     image: redis_cache/nginx
     container_name: nginx
     volumes:
-      - ./nginx/template-variables/10-variables.conf.template:/etc/nginx/sites-available/app
+      - ./nginx/template-variables/10-variables.conf.template:/etc/nginx/templates/default.template:ro
     environment:
       - SAP_SERVERNAME=${SAP_SERVERNAME}
     ports:
