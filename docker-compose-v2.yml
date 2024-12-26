@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  app:
+    build: ./app
+    image: redis_cache/app
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    container_name: app
+    ports:
+      - "8089:8089"
+    links:
+      - redis
+    environment:
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password
+      - SAP_SERVERNAME=${SAP_SERVERNAME}
+    secrets:
+      - redis_password
+
+  nginx:
+    build: ./nginx
+    image: redis_cache/nginx
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    container_name: nginx
+    volumes:
+      - ./nginx/template-variables/10-variables.conf.template:/etc/nginx/templates/default.template:ro
+      - ./nginx/ssl/nginx.crt:/etc/nginx/ssl/nginx.crt:ro
+      - ./nginx/ssl/nginx.key:/etc/nginx/ssl/nginx.key:ro
+    environment:
+      - SAP_SERVERNAME=${SAP_SERVERNAME}
+    ports:
+      - "80:80"
+      - "443:443"
+    links:
+      - app
+    secrets:
+      - redis_password
+
+  redis:
+    build: ./redis
+    image: redis_cache/redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    container_name: redis
+    volumes:
+      - ./redis/certs:/etc/certs
+    expose:
+      - "6379"
+    environment:
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password
+    secrets:
+      - redis_password
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+
+secrets:
+  redis_password:
+    file: ./secrets/redis_password.txt
+
+networks:
+  default:
+    driver: bridge
+  monitoring:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
