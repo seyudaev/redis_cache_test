@@ -43,7 +43,8 @@ func getRedisClient() *redis.Client {
 	// Ping the Redis server to check the connection
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
-		log.Fatal("Error connecting to Redis:", err)
+		log.Printf("Error connecting to Redis:", err)
+		return nil
 	}
 	return client
 }
@@ -52,13 +53,14 @@ func getMembershipByID(c *gin.Context) {
 	accountId := c.Param("id")
 	val, err := redisClient.Get(ctx, accountId).Result()
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		//panic(err)
+		log.Printf("Error connecting to redis:", err)
+		c.JSON(http.StatusInternalServerError, err)
+		return
 	}
 
 	if val != "" {
 		//Возвращаем ответ
-		c.IndentedJSON(http.StatusOK, val)
+		c.JSON(http.StatusOK, val)
 		return
 	}
 
@@ -75,25 +77,28 @@ func getMembershipByID(c *gin.Context) {
 	req.Header.Add("Authorization", "Basic "+basicAuth(username, password))
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalln(err)
-		c.AbortWithError(http.StatusInternalServerError, err)
+		log.Printf("Error getting data from sap:", err)
+		c.JSON(http.StatusInternalServerError, err)
+		return
 	}
 	//We Read the response body on the line below.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		log.Fatalln(err)
+		log.Printf("No data:", err)
+		c.JSON(http.StatusInternalServerError, err)\
+		return
 	}
 	//Convert the body to type string
 	sb := string(body)
 
 	err = redisClient.Set(ctx, accountId, sb, 300).Err()
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		panic(err)
+		log.Printf("Error setting data to redis:", err)
+		//Хотя бы вернём ответ
+		//c.JSON(http.StatusInternalServerError, err)
 	}
 	//Возвращаем ответ
-	c.IndentedJSON(http.StatusOK, sb)
+	c.JSON(http.StatusOK, sb)
 
 	log.Printf(sb)
 }
@@ -101,21 +106,22 @@ func invalidMembershipByID(c *gin.Context) {
 	accountId := c.Param("id")
 	_, err := redisClient.Del(ctx, accountId).Result() // Remove the cache entry
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		panic(err)
+		log.Printf("Error invaidating redis data:", err)
+		c.JSON(http.StatusInternalServerError, err)
 	}
 }
 func setMembershipByID(c *gin.Context) {
 	accountId := c.Param("id")
 	jsonData, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		panic(err)
+		log.Printf("Error getting body from request:", err)
+		c.JSON(http.StatusInternalServerError, err)
+		return
 	}
 	err = redisClient.Set(ctx, accountId, jsonData, 300).Err()
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		panic(err)
+		log.Printf("Error setting data to redis:", err)
+		c.JSON(http.StatusInternalServerError, err)
 	}
 }
 
