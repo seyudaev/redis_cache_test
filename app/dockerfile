@@ -5,6 +5,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /go/bin/app
 
 FROM debian
 EXPOSE 8089
-COPY *.crt app.key ./
-COPY --from=build-stage go/bin/ .
-CMD ./app
+COPY *.crt *.pem *.key ./
+##/etc/ssl/
+RUN apt-get update && apt-get install -y ca-certificates
+##COPY sap.crt /usr/share/ca-certificates/
+##RUN chmod 644 /usr/share/ca-certificates/sap.crt && update-ca-certificates
+COPY --from=build-stage /go/bin/app /usr/local/bin/
+CMD ["/usr/local/bin/app"]

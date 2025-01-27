@@ -10,5 +10,5 @@ RUN apt-get update && \
 EXPOSE 6379
 ENV CONF_PATH /etc/redis/redis.conf
 COPY redis.conf $CONF_PATH
-COPY *.crt redis.key ./
-CMD redis-server $CONF_PATH --daemonize no --requirepass $REDIS_PASSWORD
+##COPY *.crt redis.key /etc/redis/
+CMD ["redis-server", "/etc/redis/redis.conf", "--daemonize", "no", "--requirepass", "$REDIS_PASSWORD"]

@@ -1,10 +1,9 @@
 FROM debian
-RUN apt-get update && \
-    apt-get install -y nginx gettext-base libterm-readline-perl-perl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m myuser
+USER myuser
+RUN apt-get update && apt-get install -y nginx gettext-base libterm-readline-perl-perl
 COPY ./template-variables/10-variables.conf.template /etc/nginx/conf.templates/default.conf
-RUN rm /etc/nginx/sites-available/default
-RUN rm /etc/nginx/sites-enabled/default
+RUN chown -R myuser:myuser /etc/nginx/conf.templates
 EXPOSE 80
 CMD /bin/bash -c "envsubst '\$${SAP_SERVERNAME}' < /etc/nginx/conf.templates/default.conf > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"

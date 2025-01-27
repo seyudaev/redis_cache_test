@@ -1,3 +1,7 @@
+map $host $sap_servername {
+    default ${SAP_SERVERNAME};
+}
+
 server {
     server_name redis_cache;
     listen 80;

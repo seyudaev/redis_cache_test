@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  app:
+    build: ./app
+    image: redis_cache/app
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    container_name: app
+    ports:
+      - "8089:8089"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password
+      - SAP_SERVERNAME=${SAP_SERVERNAME}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    secrets:
+      - redis_password
+    networks:
+      - app_network
+    volumes:
+      - ./app/certs:/etc/app/certs:ro
+    links:
+      - redis
+
+  nginx:
+    build: ./nginx
+    image: redis_cache/nginx
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    container_name: nginx
+    volumes:
+      - ./nginx/template-variables/10-variables.conf.template:/etc/nginx/templates/default.template:ro
+      - ./nginx/ssl/nginx.crt:/etc/nginx/ssl/nginx.crt:ro
+      - ./nginx/ssl/nginx.key:/etc/nginx/ssl/nginx.key:ro
+    environment:
+      - SAP_SERVERNAME=${SAP_SERVERNAME}
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - app
+    networks:
+      - app_network
+    links:
+      - app
+
+  redis:
+    build: ./redis
+    image: redis_cache/redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    container_name: redis
+    volumes:
+      - ./redis/certs:/etc/redis/certs
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password
+    secrets:
+      - redis_password
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app_network
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+
+secrets:
+  redis_password:
+    file: ./secrets/redis_password.txt
+
+networks:
+  app_network:
+    driver: bridge
+  monitoring:
+    driver: bridge
+
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:
